@@ -28,6 +28,10 @@ backupを付けたserverは uscf->peer.data に格納されない。
 
 weight
 ------
-| ngx_http_upstream_rr_peer_t.current_weight | 稼働中に動的に変化する |
-| ngx_http_upstream_rr_peer_t.effective_weight | ? |
-| ngx_http_upstream_rr_peer_t.weight | configの値 |
+* ngx_http_upstream_rr_peer_t.current_weight  
+稼働中に動的に変化する
+* ngx_http_upstream_rr_peer_t.effective_weight  
+?
+* ngx_http_upstream_rr_peer_t.weight  
+configの値
+
