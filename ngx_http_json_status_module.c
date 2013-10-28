@@ -51,8 +51,6 @@ ngx_module_t ngx_http_json_status_module = {
 static void *
 ngx_http_json_status_create_main_conf(ngx_conf_t *cf)
 {
-  ngx_conf_log_error(NGX_LOG_DEBUG, cf, 0, "%s #start.", __FUNCTION__);
-
   ngx_http_json_status_main_conf_t *jsmcf;
 
   jsmcf = ngx_pcalloc(cf->pool, sizeof(ngx_http_json_status_main_conf_t));
@@ -66,8 +64,6 @@ ngx_http_json_status_create_main_conf(ngx_conf_t *cf)
 static char *
 ngx_http_json_status_init_main_conf(ngx_conf_t *cf, void *conf)
 {
-  ngx_conf_log_error(NGX_LOG_DEBUG, cf, 0, "#start. %s:%d", __FUNCTION__, __LINE__);
-
   ngx_http_json_status_main_conf_t *jsmcf;
   ngx_http_upstream_main_conf_t    *umcf;
   struct hostent                   *host;
@@ -94,8 +90,6 @@ ngx_http_json_status_init_main_conf(ngx_conf_t *cf, void *conf)
 	      (BYTE)*(host->h_addr + 2),
 	      (BYTE)*(host->h_addr + 3));
 
-  ngx_conf_log_error(NGX_LOG_DEBUG, cf, 0, "hostname:%s, address:%s", &jsmcf->hostname, jsmcf->addr);
-
   /* upstreamsのサイズ計算 */
   size_t upstream_size = sizeof("\"upstreams\":{},");
   for (i = 0; i < umcf->upstreams.nelts; i++) {
@@ -117,6 +111,7 @@ ngx_http_json_status_init_main_conf(ngx_conf_t *cf, void *conf)
 
   /* 合計 */
   jsmcf->contents_size = sizeof("{}")+
+    sizeof("();")+ // callback用
     /* server info */
     sizeof("\"version\":\"\",")+sizeof(NGX_HTTP_JSON_STATUS_MODULE_VERSION)+
     sizeof("\"nginx_version\":\"\",")+sizeof(NGINX_VERSION)+
@@ -153,6 +148,7 @@ ngx_http_json_status_handler(ngx_http_request_t *r)
   time_t                            now = time((time_t *)0);
   ngx_atomic_int_t                  ap, hn, ac, rq, rd, wr, wa, acc;
   ngx_uint_t                        i, j, k;
+  ngx_str_t                        *callback = ngx_http_get_arg_string(r, (u_char *)ARG_PARAMETER_CALLBACK);
 
   ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "#start. %s:%d", __FUNCTION__, __LINE__);
 
@@ -161,7 +157,7 @@ ngx_http_json_status_handler(ngx_http_request_t *r)
 
   /* GET or HEAD only */
   if (r->method != NGX_HTTP_GET && r->method != NGX_HTTP_HEAD) {
-    ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "method = %d: GET = %d,HEAD = %d", r->method, NGX_HTTP_GET, NGX_HTTP_HEAD);
+    ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "method = %d: GET = %d,HEAD = %d", r->method, NGX_HTTP_GET, NGX_HTTP_HEAD);
     return NGX_HTTP_NOT_ALLOWED;
   }
 
@@ -171,7 +167,7 @@ ngx_http_json_status_handler(ngx_http_request_t *r)
     return rc;
   }
 
-  b = ngx_create_temp_buf(r->pool, jsmcf->contents_size);
+  b = ngx_create_temp_buf(r->pool, jsmcf->contents_size + (sizeof(u_char)*callback->len));
   if (b == NULL) {
     return NGX_HTTP_INTERNAL_SERVER_ERROR;
   }
@@ -191,6 +187,10 @@ ngx_http_json_status_handler(ngx_http_request_t *r)
 #else
   wa = ac - (rd + wr);
 #endif
+
+  if (callback->len > 0) {
+    b->last = ngx_sprintf(b->last, "%V(", callback);
+  }
 
   b->last = ngx_sprintf(b->last, "{"); /* contents start */
   b->last = ngx_sprintf(b->last, "\"version\":\"%s\",", NGX_HTTP_JSON_STATUS_MODULE_VERSION); /* module version */
@@ -252,6 +252,9 @@ ngx_http_json_status_handler(ngx_http_request_t *r)
 
   b->last = ngx_sprintf(b->last, "}");
   b->last = ngx_sprintf(b->last, "}"); /* contents end */
+  if (callback->len > 0) {
+    b->last = ngx_sprintf(b->last, ");");
+  }
 
   b->memory = 1;
   b->flush = 1;
@@ -263,7 +266,6 @@ ngx_http_json_status_handler(ngx_http_request_t *r)
   r->headers_out.content_length_n = b->last - b->pos;
   rc = ngx_http_send_header(r);
   if (rc == NGX_ERROR || rc > NGX_OK || r->header_only) {
-    ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "#return. %s:%d", __FUNCTION__, __LINE__);
     return rc;
   }
 
@@ -280,7 +282,6 @@ ngx_http_json_status(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
   clcf->handler = ngx_http_json_status_handler;
 
   mcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_json_status_module);
-  ngx_conf_log_error(NGX_LOG_DEBUG, cf, 0, "#hostname: %s. %s:%d", &mcf->hostname, __FUNCTION__, __LINE__);
 
   return NGX_CONF_OK;
 }
@@ -295,4 +296,32 @@ ngx_strtcmp(ngx_str_t *s1, ngx_str_t *s2) {
     return ngx_strncmp(s1->data, s2->data, s1->len);
   }
   return ngx_strcmp(s1->data, s2->data);
+}
+
+static ngx_str_t *
+ngx_http_get_arg_string(ngx_http_request_t *r, u_char *name) {
+  ngx_http_variable_value_t *vv;
+  ngx_str_t  key = {ngx_strlen(name), (u_char *)name};
+  u_char    *data;
+  ngx_str_t *str;
+
+  str = ngx_pcalloc(r->pool, sizeof(ngx_str_t));
+
+  vv = ngx_http_get_variable(r, &key, ngx_hash_key(key.data, key.len));
+  if (vv == NULL || vv->not_found) {
+    str->len = 0;
+    str->data = (u_char *)"";
+    return str;
+  }
+
+  data = ngx_pcalloc(r->pool, (vv->len + 1) * sizeof(u_char));
+  ngx_cpystrn(data, vv->data, vv->len + 1);
+
+  str->data = data;
+  str->len = vv->len;
+
+  ngx_str_null(&key);
+  vv->data = NULL;
+
+  return str;
 }
