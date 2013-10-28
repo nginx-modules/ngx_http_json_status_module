@@ -35,3 +35,12 @@ weight
 * ngx_http_upstream_rr_peer_t.weight  
 configの値
 
+debug
+-----
+### No symbol table info available. 対策 (参考)[http://www.debian.or.jp/community/devel/debian-policy-ja/policy.ja.html/ch-source.html]
+```bash
+export DEB_BUILD_OPTIONS=noopt
+debuild -us -uc
+sudo dpkg -i nginx-debug_1.4.3-1~quantal_amd64.deb
+sudo gdb /usr/sbin/nginx.debug /path/to/core
+```
