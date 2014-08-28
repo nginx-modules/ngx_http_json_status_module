@@ -90,7 +90,7 @@ ngx_http_json_status_init_main_conf(ngx_conf_t *cf, void *conf)
 	      (BYTE)*(host->h_addr + 2),
 	      (BYTE)*(host->h_addr + 3));
 
-  /* upstreamsのサイズ計算 */
+  /* size calculation of upstreams */
   size_t upstream_size = sizeof("\"upstreams\":{},");
   for (i = 0; i < umcf->upstreams.nelts; i++) {
     ngx_http_upstream_srv_conf_t *uscf   = ((ngx_http_upstream_srv_conf_t **)umcf->upstreams.elts)[i];
@@ -100,18 +100,18 @@ ngx_http_json_status_init_main_conf(ngx_conf_t *cf, void *conf)
        sizeof("{\"total\":\"\",\"1xx\":\"\",\"2xx\":\"\",\"3xx\":\"\",\"4xx\":\"\",\"5xx\":\"\"}")+ // responses
        sizeof("{\"checks\":\"\",\"fails\":\"\",\"unhealthy\":\"\",\"last_passed\":\"\"}")+ // health_checks
        //sizeof(ngx_uint_t)*10+ // responses + health_checks values
-       sizeof("N/A")*10+     // responses + health_checks values (暫定)
+       sizeof("N/A")*10+     // responses + health_checks values (Tentative)
        sizeof(ngx_str_t)*1+  // server
        sizeof(ngx_uint_t)*3+ // backup + weight + fails
        sizeof("unhealthy")+  // satte
-       sizeof("N/A")*8       // etc(暫定)
+       sizeof("N/A")*8       // etc(Tentative)
        )*peers->number
       ;
   }
 
-  /* 合計 */
+  /* sum total */
   jsmcf->contents_size = sizeof("{}")+
-    sizeof("();")+ // callback用
+    sizeof("();")+ // callback for
     /* server info */
     sizeof("\"version\":\"\",")+sizeof(NGX_HTTP_JSON_STATUS_MODULE_VERSION)+
     sizeof("\"nginx_version\":\"\",")+sizeof(NGINX_VERSION)+
@@ -120,14 +120,14 @@ ngx_http_json_status_init_main_conf(ngx_conf_t *cf, void *conf)
     /* connections */
     sizeof("\"connections\":{},")+
     sizeof("\"accepted\":\"\",")+NGX_ATOMIC_T_LEN+
-    sizeof("\"dropped\":\"\",")+NGX_ATOMIC_T_LEN+ // c_dropped = c_accepted.to_i - handled.to_i (newrelic_nginx_agent参照)
+    sizeof("\"dropped\":\"\",")+NGX_ATOMIC_T_LEN+ // c_dropped = c_accepted.to_i - handled.to_i (see newrelic_nginx_agent)
     sizeof("\"active\":\"\",")+NGX_ATOMIC_T_LEN+
     sizeof("\"idle\":\"\",")+NGX_ATOMIC_T_LEN+
     sizeof("\"counter\":\"\",")+NGX_ATOMIC_T_LEN+
     /* requests */
     sizeof("\"requests\":{},")+
     sizeof("\"total\":\"\",")+NGX_ATOMIC_T_LEN+
-    sizeof("\"current\":\"\"")+NGX_ATOMIC_T_LEN+ // r_current = c_reading.to_i + c_writing.to_i (newrelic_nginx_agent参照)
+    sizeof("\"current\":\"\"")+NGX_ATOMIC_T_LEN+ // r_current = c_reading.to_i + c_writing.to_i (see newrelic_nginx_agent)
     /* upstreams */
     upstream_size+
     /* terminate */
@@ -161,7 +161,7 @@ ngx_http_json_status_handler(ngx_http_request_t *r)
     return NGX_HTTP_NOT_ALLOWED;
   }
 
-  /* request bodyは不要なので破棄する */
+  /* discard request body is not required */
   rc = ngx_http_discard_request_body(r);
   if (rc != NGX_OK) {
     return rc;
@@ -174,15 +174,15 @@ ngx_http_json_status_handler(ngx_http_request_t *r)
   out.buf = b;
   out.next = NULL;
 
-  /* NGX_STAT_STUBを有効にする(src/event/ngx_event.h) */
+  /* You enable NGX_STAT_STUB and (src/event/ngx_event.h) */
   acc = *ngx_connection_counter;
   ap = *ngx_stat_accepted;
-  ac = *ngx_stat_active; // workerが異常終了した場合この値をリセットする必要がある
+  ac = *ngx_stat_active; // it is necessary to reset the value if the worker was aborted
   hn = *ngx_stat_handled;
   rq = *ngx_stat_requests;
   rd = *ngx_stat_reading;
   wr = *ngx_stat_writing;
-#if nginx_version >= 1004001 /* 1.4.1から(http://lxr.evanmiller.org/http/ident?i=ngx_stat_waiting) */
+#if nginx_version >= 1004001 /* From 1.4.1 (http://lxr.evanmiller.org/http/ident?i=ngx_stat_waiting) */
   wa = *ngx_stat_waiting;
 #else
   wa = ac - (rd + wr);
@@ -214,7 +214,7 @@ ngx_http_json_status_handler(ngx_http_request_t *r)
 
     for (j = 0; j < peers->number; j++) {
 
-      // config情報
+      // config information
       ngx_uint_t config_backup = 0;
       ngx_uint_t config_down = 0;
       for (k = 0; k < uscf->servers->nelts; k++) {

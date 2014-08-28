@@ -11,7 +11,7 @@ git clone git@github.com:psychobilly/ngx_http_json_status_module.git
 make && sudo make install
 ```
 
-debパッケージに組み込む
+deb included in the package
 -----------------------
 ```bash
 cat /etc/issue.net
@@ -21,7 +21,7 @@ deb http://nginx.org/packages/ubuntu/ quantal nginx
 deb-src http://nginx.org/packages/ubuntu/ quantal nginx
 wget -O - http://nginx.org/keys/nginx_signing.key | sudo apt-key add -
 sudo apt-get update
-# 依存があるので一回インストールしておく
+# I keep one installed once because there are dependencies
 sudo apt-get install nginx
 
 cd /path/to/work

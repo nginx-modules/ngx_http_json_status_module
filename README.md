@@ -1,11 +1,11 @@
 ngx_http_json_status_module
 ===========================
 
-仕様
+Specification
 ----
-nginxのstatusをjson形式で返却するモジュール
+module to be returned in json format status of nginx
 
-### ディレクティブ
+### Directives
 ```
 syntax:	 status;
 default: none;
@@ -13,7 +13,7 @@ context: location
 ```
 
 ### response
-* 各要素の意味は[こちら](http://nginx.com/download/newrelic/newrelic_nginx_agent.tar.gz)も参照にする
+* Meaning of each element [Here](http://nginx.com/download/newrelic/newrelic_nginx_agent.tar.gz), want to see also
 ```json
 {
     "version": "1",
@@ -66,13 +66,13 @@ context: location
 }
 ```
 
-組み込み
+Built-in
 --------
 ```bash
 ./configure --add-module=./ngx_http_json_status_module
 ```
 
-設定例
+Setting Example
 ------
 ```
 server {
@@ -83,7 +83,7 @@ server {
 }
 ```
 
-参照
+Reference
 ----
 * [module guide](http://www.evanmiller.org/nginx-modules-guide.html)
 * [nginx plus](http://nginx.com/products/)

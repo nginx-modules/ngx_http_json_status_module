@@ -1,7 +1,7 @@
-モジュール開発
+Module development
 ==============
 
-雛形作成
+Template creation
 --------
 ```bash
 sudo gem install ngxmodgen
@@ -16,7 +16,7 @@ tree
 0 directories, 2 files
 ```
 
-ディレクティブの設定
+Directive settings
 --------------------
 [Configuration directives](http://www.nginxguts.com/2011/09/configuration-directives/)
 ### status;
@@ -36,7 +36,7 @@ ngx_http_json_status_commands[] = {
   ngx_null_command
 };
 ```
-### status on|off; の場合
+### status on|off; In the case of
 ```c
 static char *ngx_http_json_status(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 ...
@@ -54,17 +54,17 @@ ngx_http_json_status_commands[] = {
 };
 ```
 
-ヘッダファイルを追加
+Add the header file
 --------------------
-ヘッダファイルを作りたくなった場合configに一行追加する。  
-今回はngx_http_json_status_module.hを追加するのでconfigに以下を追加。
+To add a line to the config if you wanted to create a header file. 
+Add the following to the config so you add a ngx_http_json_status_module.h this time.
 ```
 NGX_ADDON_DEPS="$NGX_ADDON_DEPS $ngx_addon_dir/ngx_http_json_status_module.h"
 ```
 
 ngx_command_t
 -------------
-ディレクティブの定義をした ngx_command_t 構造体は以下の様になっている。
+ngx_command_t structure that the definition of the directive has been as follows.
 ```c
 typedef struct ngx_command_s     ngx_command_t;
 
@@ -77,12 +77,12 @@ struct ngx_command_s {
     void                 *post;
 };
 ```
-set要素はname要素のディレクティブが設定されたときに呼び出される関数。
+set element function to be called when the directives of the name element has been set.
 
-ngx_command_tのset要素:ngx_http_json_status
+set element of ngx_command_t: ngx_http_json_status
 -------------------------------------------
-status; が設定されているときに呼び出す関数。  
-内部でhandlerを設定する。
+status; There function to call when it is set.  
+I set the handler inside. 
 ### ngx_http_json_status_module.h
 ```c
 static char *ngx_http_json_status(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
@@ -103,13 +103,13 @@ ngx_http_json_status(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
 handler:ngx_http_json_status_handler
 ------------------------------------
-status;が設定されたlocationにリクエストが来た時に実行される。
+status; But to be executed when a request comes in to the location that has been set.
 ### ngx_http_json_status_module.h
 ```c
 static ngx_int_t ngx_http_json_status_handler(ngx_http_request_t *r);
 ```
 ### ngx_http_json_status_module.c
-jsonで空データを返すところまで  
+json until it returns an empty data in
 ```c
 static ngx_int_t
 ngx_http_json_status_handler(ngx_http_request_t *r)
@@ -161,7 +161,7 @@ ngx_http_json_status_handler(ngx_http_request_t *r)
 
 create main configuration
 ------------
-モジュール内のメインの設定用の構造体を生成する。
+I want to generate a structure for setting the main module.
 ### ngx_http_json_status_module.h
 ```c
 struct  ngx_http_json_status_main_conf_s {
@@ -172,9 +172,9 @@ struct  ngx_http_json_status_main_conf_s {
 static void *ngx_http_json_status_create_main_conf(ngx_conf_t *cf);
 ```
 ### ngx_http_json_status_module.c
-* ngx_http_json_status_module_ctxのcreate_main_confに構造体を生成する関数を指定
-* ngx_http_json_status_create_main_confでhostnameとip addressを取得してセットする
-* 今回はinit_main_conf使用しないけど一応用意しておいた
+* Specify the function that generates a structure to create_main_conf of ngx_http_json_status_module_ctx 
+* Set it to get the ip address and hostname in ngx_http_json_status_create_main_conf
+* Do not use init_main_conf this time, but I had been prepared once
 ```c
 static ngx_http_module_t ngx_http_json_status_module_ctx = {
   NULL,                              /* preconfiguration */
