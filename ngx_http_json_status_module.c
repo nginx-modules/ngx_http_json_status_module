@@ -276,12 +276,9 @@ static char *
 ngx_http_json_status(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
   ngx_http_core_loc_conf_t  *clcf;
-  ngx_http_json_status_main_conf_t *mcf = conf;
 
   clcf = ngx_http_conf_get_module_loc_conf(cf, ngx_http_core_module);
   clcf->handler = ngx_http_json_status_handler;
-
-  mcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_json_status_module);
 
   return NGX_CONF_OK;
 }
