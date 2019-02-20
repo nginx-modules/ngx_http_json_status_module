@@ -3,7 +3,7 @@ ngx_http_json_status_module
 
 Specification
 ----
-module to be returned in json format status of nginx
+NGINX status module for connection/request and upstream status, which is returned in JSON format.
 
 ### Directives
 ```
